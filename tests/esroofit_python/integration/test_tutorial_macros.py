@@ -349,7 +349,7 @@ class RootAnalysisTutorialMacrosTest(unittest.TestCase):
         # report checks
         self.assertIn('report_pages', ds)
         self.assertIsInstance(ds['report_pages'], list)
-        self.assertEqual(12, len(ds['report_pages']))
+        self.assertEqual(13, len(ds['report_pages']))
 
         # data-summary checks
         settings = process_manager.service(ConfigObject)

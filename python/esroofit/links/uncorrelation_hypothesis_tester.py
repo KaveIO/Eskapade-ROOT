@@ -24,14 +24,13 @@ import numpy as np
 import pandas as pd
 import root_numpy
 import tabulate
-# from numba import jit # disabled
 
 from eskapade import process_manager, resources, Link, DataStore, StatusCode
 from eskapade.core import persistence
 from eskapade.visualization import vis_utils
+from eskapade.analysis import correlation
 
 from esroofit import data_conversion, roofit_utils, root_helper, RooFitManager
-
 
 class UncorrelationHypothesisTester(Link):
     """Link to test for correlations between categorical observables.
@@ -62,7 +61,9 @@ class UncorrelationHypothesisTester(Link):
         """Initialize link instance.
 
         :param str name: name of link
-
+        :param bool calc_significance: if false, do not calculate significances.
+        :param bool calc_residuals: if false, do not calculate residuals.
+        :param bool calc_correlations: if false, do not calculate correlations.
         :param list columns: list of columns to pick up from dataset and pair. Default is all columns. (optional)
         :param list x_columns: list of columns to be paired with right pair columns (left x right).
         :param list y_columns: list of columns to be paired with left pair columns (left x right).
@@ -74,9 +75,17 @@ class UncorrelationHypothesisTester(Link):
         :param dict map_to_original: dictiorary or key to dictionary to map back factorized columns to original.
                                      map_to_original is a dict of dicts, one dict for each column.
         :param dict var_number_of_bins: number of bins for certain variable (optional)
+        :param dict var_min_value: min value for certain variable (optional)
+        :param dict var_max_value: max value for certain variable (optional)
+        :param dict var_binning: roofit binning dict for certain variables (optional)
+        :param str var_binning_key: key in datastore to roofit binning dict for certain variables
         :param int default_number_of_bins: default number of bins for continuous observables. Default setting is 10.
         :param dict var_ignore_categories: ignore category (list of categories) for certain variable (optional)
         :param list ignore_categories: ignore list of categories for all variables if present (optional)
+        :param dict var_accept_categories: accept only category (list of categories) for certain variable (optional)
+        :param list accept_categories: accept only list of categories for all variables if present (optional)
+        :param dict var_ignore_values: ignore value (list of values) for certain real variable (optional)
+        :param list ignore_values: ignore list of values for all real variables if present (optional)
         :param int nsims_per_significance: number of simulation per significance evaluation. Default is 500.
         :param str read_key: key of input data to read from data store
         :param str read_key_vars: key of input rooargset of observables in data store (optional)
@@ -100,6 +109,9 @@ class UncorrelationHypothesisTester(Link):
         self._process_kwargs(kwargs,
                              read_key=None,
                              read_key_vars='',
+                             calc_significance=True,
+                             calc_correlations=True,
+                             calc_residuals=True,
                              combinations=[],
                              columns=[],
                              x_columns=[],
@@ -108,9 +120,17 @@ class UncorrelationHypothesisTester(Link):
                              from_ws=False,
                              map_to_original={},
                              var_number_of_bins={},
+                             var_min_value={},
+                             var_max_value={},
+                             var_binning_key='',
+                             var_binning={},
                              default_number_of_bins=10,
                              var_ignore_categories={},
                              ignore_categories=[],
+                             var_accept_categories={},
+                             accept_categories=[],
+                             var_ignore_values={},
+                             ignore_values=[],
                              nsims_per_significance=250,
                              significance_key='significance_matrix',
                              sk_significance_map='',
@@ -134,6 +154,18 @@ class UncorrelationHypothesisTester(Link):
         self.significance_map = {}
         self.residuals_map = {}
         self.mto = {}
+        self.n_bins = -1
+        self.n_unique = -1
+        self.nx = 0
+        self.ny = 0
+        self.x_cols = []
+        self.y_cols = []
+        self.symmetrize = False
+        self.chi2_matrix = None
+        self.correlation_matrix = None
+        self.significance_matrix = None
+        self.n_entries = -1
+        self.resid_all = []
 
     def _process_results_path(self):
         """Process results_path argument."""
@@ -155,13 +187,14 @@ class UncorrelationHypothesisTester(Link):
         # check input arguments
         self.check_arg_types(read_key=str, significance_key=str, sk_significance_map=str, sk_residuals_map=str,
                              sk_residuals_overview=str, default_number_of_bins=int, nsims_per_significance=int,
-                             prefix=str,
-                             z_threshold=float, pages_key=str, client_pages_key=str, hist_dict_key=str)
+                             prefix=str, var_binning=dict,
+                             z_threshold=float, pages_key=str, client_pages_key=str, hist_dict_key=str, var_binning_key=str)
         self.check_arg_types(recurse=True, allow_none=True, columns=str)
         self.check_arg_types(recurse=True, allow_none=True, x_columns=str)
         self.check_arg_types(recurse=True, allow_none=True, y_columns=str)
         self.check_arg_types(recurse=True, allow_none=True, ignore_categories=str)
-        self.check_arg_types(recurse=True, allow_none=True, var_ignore_categories=str)
+        self.check_arg_types(recurse=True, allow_none=True, accept_categories=str)
+        self.check_arg_types(recurse=True, allow_none=True, ignore_values=float)
         self.check_arg_vals('read_key')
         self.check_arg_vals('significance_key')
 
@@ -192,6 +225,20 @@ class UncorrelationHypothesisTester(Link):
                 self.var_ignore_categories[col] = [ic]
             elif not isinstance(ic, list):
                 raise TypeError('var_ignore_categories key "{}" needs to be a string or list of strings'.format(col))
+
+        # check that var_accept_categories are set correctly.
+        for col, ic in self.var_accept_categories.items():
+            if isinstance(ic, str):
+                self.var_accept_categories[col] = [ic]
+            elif not isinstance(ic, list):
+                raise TypeError('var_accept_categories key "{}" needs to be a string or list of strings'.format(col))
+
+        # check that var_ignore_values are set correctly.
+        for col, iv in self.var_ignore_values.items():
+            if isinstance(iv, float):
+                self.var_ignore_values[col] = [iv]
+            elif not isinstance(iv, list):
+                raise TypeError('var_ignore_values key "{}" needs to be a float or list of floats'.format(col))
 
         # load roofit classes
         roofit_utils.load_libesroofit()
@@ -317,23 +364,26 @@ class UncorrelationHypothesisTester(Link):
             assert isinstance(self.client_pages, list), \
                 'Client pages key "{key}" does not refer to a list'.format(key=self.client_pages_key)
 
-        # 1g. initialize significance_matrix
-        nx = ny = 0
-        x_cols = y_cols = []
+        if self.var_binning_key:
+            self.var_binning.update( ds.get(self.var_binning_key, {}) )
+
+        # 1g. initialize matrices
         if self.columns:
-            nx = len(self.columns)
-            ny = len(self.columns)
-            x_cols = self.columns
-            y_cols = self.columns
+            self.nx = len(self.columns)
+            self.ny = len(self.columns)
+            self.x_cols = self.columns
+            self.y_cols = self.columns
         if self.x_columns or self.y_columns:
-            nx = len(self.x_columns)
-            ny = len(self.y_columns)
-            x_cols = self.x_columns
-            y_cols = self.y_columns
-        significance_matrix = np.zeros((ny, nx))
-        symmetrize = True if self.columns else False
-        n_bins = nx * ny if not symmetrize else nx * nx - nx
-        n_unique = n_bins if not symmetrize else (nx * nx - nx) / 2
+            self.nx = len(self.x_columns)
+            self.ny = len(self.y_columns)
+            self.x_cols = self.x_columns
+            self.y_cols = self.y_columns
+        self.chi2_matrix = np.zeros((self.ny, self.nx))
+        self.correlation_matrix = np.ones((self.ny, self.nx))
+        self.significance_matrix = np.zeros((self.ny, self.nx))
+        self.symmetrize = True if self.columns else False
+        self.n_bins = self.nx * self.ny if not self.symmetrize else self.nx * self.nx - self.nx
+        self.n_unique = self.n_bins if not self.symmetrize else (self.nx * self.nx - self.nx) / 2
 
         # 2a. loop over unique column pairs and add to combinations
         for idx, c1 in enumerate(self.columns):
@@ -352,178 +402,122 @@ class UncorrelationHypothesisTester(Link):
 
         # 2b. loop over all combinations: calculate significance and residuals
         n_combos = len(self.combinations)
-        n_entries = rds.numEntries()
+        self.n_entries = rds.numEntries()
         for i_c, combo in enumerate(self.combinations):
             combo_name = ':'.join(combo)
             # make roodatahist for each combination
             obsset = ROOT.RooArgSet()
             for c in combo:
                 obsset.add(varset.find(c))
-            cat_cut_str = '1'
+            cut_str = '1'
+            # set binning of variables, can differ per combo
+            c_nbins = []
             for j, var in enumerate(obsset):
                 if isinstance(var, ROOT.RooRealVar):
-                    n_bins = root_helper.get_variable_value(self.var_number_of_bins, combo, j,
-                                                            self.default_number_of_bins)
-                    var.setBins(n_bins)
+                    if var.GetName() in self.var_binning and isinstance(self.var_binning[var.GetName()], ROOT.RooBinning):
+                        binning = self.var_binning[var.GetName()]
+                        var.setBinning(binning)
+                    else:
+                        var_min = root_helper.get_variable_value(self.var_min_value, combo, j, -999.)
+                        var_max = root_helper.get_variable_value(self.var_min_value, combo, j, 999.)
+                        if var_min != -999.:
+                            var.setMin(var_min)
+                        if var_max != 999.:
+                            var.setMax(var_max)
+                        nbins = root_helper.get_variable_value(self.var_number_of_bins, combo, j,
+                                                               self.default_number_of_bins)
+                        var.setBins(nbins)
+                    c_nbins.append(var.numBins())
+                    # ignore values
+                    ignore_values = self._ignore_values(combo, j)
+                    for iv in ignore_values:
+                        cut_str += ' && ({}!={})'.format(var.GetName(), iv)
                 elif isinstance(var, ROOT.RooCategory):
+                    ntypes = var.numTypes()
+                    accept_categories = self._accept_categories(combo, j)
+                    if accept_categories:
+                        ntypes = sum([var.isValidLabel(ic) for ic in accept_categories])
+                        if ntypes:
+                            select_str = " && (0 "
+                            for ic in accept_categories:
+                                if not var.isValidLabel(ic):
+                                    continue
+                                select_str += '|| ({}=={}::{})'.format(var.GetName(), var.GetName(), ic)
+                            cut_str += select_str + ')'
                     ignore_categories = self._ignore_categories(combo, j)
                     for ic in ignore_categories:
                         if not var.isValidLabel(ic):
                             continue
-                        cat_cut_str += ' && ({}!={}::{})'.format(var.GetName(), var.GetName(), ic)
+                        ntypes -= 1
+                        cut_str += ' && ({}!={}::{})'.format(var.GetName(), var.GetName(), ic)
+                    assert ntypes>0, 'Number of (selected) categories for category {} is not positive: {}'.format(var.GetName(), ntypes)
+                    c_nbins.append(ntypes)
+            # remove specific categories (e.g. nan) if this has been requested so
             rdh = ROOT.RooDataHist(combo_name, combo_name, obsset)
-            # remove specific categories (e.g. nan) if this has been requested so.
-            red = rds.reduce(ROOT.RooFit.Cut(cat_cut_str))
+            red = rds.reduce(ROOT.RooFit.Cut(cut_str))
             rdh.add(red)
             del red
             # rdh.add(rds)
-            # a) calculate global significance of combo
+
             self.logger.debug(
                 'Now processing combination ({index:d}/{total:d}): '
-                '{comb} with {n_bins} bins and {n_entries} entries.',
-                index=i_c + 1, total=n_combos, comb=str(combo), n_bins=rdh.numEntries(), n_entries=rdh.sumEntries())
-            Zi = ROOT.Eskapade.ABCD.SignificanceOfUncorrelatedHypothesis(rdh, obsset, self.nsims_per_significance)
-            self.significance_map[combo_name] = Zi
-            if len(combo) == 2:
-                x = x_cols.index(combo[0])
-                y = y_cols.index(combo[1])
-                if x < nx and y < ny:
-                    significance_matrix[y, x] = Zi
-                    if symmetrize:
-                        significance_matrix[x, y] = Zi
+                '{comb} with {nbins} bins and {nentries} entries.',
+                index=i_c + 1, total=n_combos, comb=str(combo), nbins=rdh.numEntries(), nentries=rdh.sumEntries())
+
+            # 0) calculate global correlation of combo
+            if self.calc_correlations:
+                chi2_value = ROOT.Eskapade.ABCD.Chi2OfUncorrelatedHypothesis(rdh, obsset)
+                if len(combo) == 2 and self.nx > 0 and self.ny > 0:
+                    rho = correlation.rho_from_chi2(chi2_value, rdh.sumEntries(), c_nbins[0], c_nbins[1])
+                    ix = self.x_cols.index(combo[0])
+                    iy = self.y_cols.index(combo[1])
+                    if ix < self.nx and iy < self.ny:
+                        self.chi2_matrix[iy, ix] = chi2_value
+                        self.correlation_matrix[iy, ix] = rho
+                        if self.symmetrize:
+                            self.chi2_matrix[ix, iy] = chi2_value
+                            self.correlation_matrix[ix, iy] = rho
+
+            # a) calculate global significance of combo
+            if self.calc_significance:
+                Zi = ROOT.Eskapade.ABCD.SignificanceOfUncorrelatedHypothesis(rdh, obsset, self.nsims_per_significance)
+                self.significance_map[combo_name] = Zi
+                self.logger.debug(
+                    'Combination {comb!s} has significance: {zi:f}.', comb=combo, zi=Zi)
+                if len(combo) == 2 and self.nx > 0 and self.ny > 0:
+                    ix = self.x_cols.index(combo[0])
+                    iy = self.y_cols.index(combo[1])
+                    if ix < self.nx and iy < self.ny:
+                        self.significance_matrix[iy, ix] = Zi
+                        if self.symmetrize:
+                            self.significance_matrix[ix, iy] = Zi
+
             # b) calculate residuals
-            success = ROOT.Eskapade.ABCD.checkInputData(rdh)
-            self.logger.debug(
-                'Combination {comb!s} has significance: {zi:f}. Can calculate residuals? {status}.', comb=combo, zi=Zi,
-                status=success)
-            if not success:
-                self.logger.warning('Cannot calculate residuals for combination: {comb!s}. Skipping.', comb=combo)
+            if self.calc_residuals:
+                success = ROOT.Eskapade.ABCD.checkInputData(rdh)
+                self.logger.debug(
+                    'Can calculate residuals? {status}.', status=success)
+                if not success:
+                    self.logger.warning('Cannot calculate residuals for combination: {comb!s}. Skipping.', comb=combo)
+                    del rdh
+                    continue
+                residi = ROOT.Eskapade.ABCD.GetNormalizedResiduals(rdh, obsset)
+                dfri = data_conversion.rds_to_df(residi)
                 del rdh
-                continue
-            residi = ROOT.Eskapade.ABCD.GetNormalizedResiduals(rdh, obsset)
-            dfri = data_conversion.rds_to_df(residi)
-            del rdh
-            del residi
-            # do the mapping of roofit categories back to original format
-            if self.mto:
-                dfri.replace(self.mto, inplace=True)
-            self.residuals_map[combo_name] = dfri
+                del residi
+                # do the mapping of roofit categories back to original format
+                if self.mto:
+                    dfri.replace(self.mto, inplace=True)
+                self.residuals_map[combo_name] = dfri
 
         # below, create report page for each variable in data frame
         # create resulting heatmaps and histograms
-
-        # 1. make significance heatmap
-        f_path = self.results_path + self.prefix + 'all_correlation_significance.pdf'
-        var_label = 'Significance correlation matrix (s.d.)'
-        vis_utils.plot_correlation_matrix(significance_matrix, x_cols, y_cols, f_path, var_label, -5, 5)
-        stats = [('entries', n_entries), ('bins', n_bins), ('unique', n_unique),
-                 ('> 0', (significance_matrix.ravel() > 0).sum()),
-                 ('< 0', (significance_matrix.ravel() < 0).sum()),
-                 ('avg', np.average(significance_matrix.ravel())),
-                 ('max', max(significance_matrix.ravel())),
-                 ('min', min(significance_matrix.ravel()))] if nx > 0 and ny > 0 else []
-        stats_table = tabulate.tabulate(stats, tablefmt='latex')
-        self.pages.append(self.page_template.replace('VAR_LABEL', var_label)
-                          .replace('VAR_STATS_TABLE', stats_table)
-                          .replace('VAR_HISTOGRAM_PATH', f_path))
-        significance = self.significance_map.copy()
-        for key in significance:
-            significance[key] = [significance[key]]
-        dfsignificance = pd.DataFrame(significance).stack().reset_index(level=1) \
-            .rename(columns={'level_1': 'Questions', 0: 'Significance'}) \
-            .sort_values(by='Significance', ascending=False)
-        keep_cols = ['Questions', 'Significance']
-        table = latex_residuals_table(dfsignificance, keep_cols, self.z_threshold, norm_resid_col='Significance')
-        if table:
-            self.client_pages.append(
-                self.table_template.replace('VAR_LABEL', 'Significance').replace('VAR_STATS_TABLE', table))
-
-        # 2a. create one residual table containing the top non-noncorrelating answers
-        resid_all = []
-        if len(self.combinations) > 1:
-            # create one dataframe containing all data
-            resid_list = []
-            ndim_max = 2
-            for key in self.residuals_map:
-                if abs(self.significance_map[key]) < self.z_threshold:
-                    continue
-                dftmp = self.residuals_map[key].copy()
-                resid_list.append(self._format_df(dftmp, key))
-                if len(key.split(':')) > ndim_max:
-                    ndim_max = len(key.split(':'))
-            # convert top residuals into latex table
-            if len(resid_list) >= 1:
-                resid_all = resid_list[0]
-                if len(resid_list) > 1:
-                    resid_all = resid_list[0].append(resid_list[1:], ignore_index=True)
-                resid_all = resid_all.reindex(resid_all.normResid.abs().sort_values(ascending=False).index)
-                keep_cols = ['question_{:d}'.format(i) for i in range(ndim_max)] + \
-                            ['answer_{:d}'.format(i) for i in range(ndim_max)] + \
-                            ['num_entries', 'abcd', 'abcd_error', 'pValue', 'normResid']
-                table = latex_residuals_table(resid_all, keep_cols, self.z_threshold)
-                self.pages.append(
-                    self.table_template.replace('VAR_LABEL', 'Most significant outliers').replace('VAR_STATS_TABLE',
-                                                                                                  table))
-                keep_cols = ['question_{:d}'.format(i) for i in range(ndim_max)] + \
-                            ['answer_{:d}'.format(i) for i in range(ndim_max)] + \
-                            ['num_entries', 'abcd', 'normResid']
-                table = latex_residuals_table(resid_all, keep_cols, self.z_threshold)
-                self.client_pages.append(
-                    self.table_template.replace('VAR_LABEL', 'Most significant outliers').replace('VAR_STATS_TABLE',
-                                                                                                  table))
-
-        # 2b. make residuals heatmaps
-        for combo in self.combinations:
-            if len(combo) != 2:
-                continue
-            combo_name = ':'.join(combo)
-            residi = self.residuals_map[combo_name]
-            mat_normresiduals, x_vals, y_vals = extract_matrix(residi, combo[0], combo[1])
-            mat_observed, x_vals, y_vals = extract_matrix(residi, combo[0], combo[1], 'num_entries')
-            f_path = self.results_path + self.prefix + 'normalized_residuals_heatmap_' + '_'.join(combo) + '.pdf'
-            vis_utils.plot_correlation_matrix(mat_normresiduals, x_vals, y_vals, f_path, 'significance relation', -5, 5,
-                                              x_label=combo[0], y_label=combo[1],
-                                              matrix_numbers=mat_observed,
-                                              print_both_numbers=self.verbose_plots)
-            stats = [('entries', residi['num_entries'].sum()), ('bins', len(residi.index)),
-                     ('> 0', (residi['normResid'] > 0).sum()),
-                     ('< 0', (residi['normResid'] < 0).sum()),
-                     ('avg', residi['normResid'].mean()),
-                     ('max', residi['normResid'].max()),
-                     ('min', residi['normResid'].min())]
-            stats_table = tabulate.tabulate(stats, tablefmt='latex')
-            self.pages.append(self.page_template.replace('VAR_LABEL', 'relation (abcd): ' + ' vs '.join(combo))
-                              .replace('VAR_STATS_TABLE', stats_table)
-                              .replace('VAR_HISTOGRAM_PATH', f_path))
-
-        # 2c. make residuals tables
-        for combo in self.combinations:
-            combo_name = ':'.join(combo)
-            residi = self.residuals_map[combo_name]
-            keep_cols = combo + ['num_entries', 'abcd', 'abcd_error', 'pValue', 'normResid']
-            table = latex_residuals_table(residi, keep_cols, self.z_threshold)
-            if not table:
-                continue
-            self.pages.append(
-                self.table_template.replace('VAR_LABEL', 'outliers: ' + ' vs '.join(combo)).replace('VAR_STATS_TABLE',
-                                                                                                    table))
-
-        # 2d. make residuals histograms
-        p_all = ROOT.TH1F('p_all', 'p_all', 20, 0, 1)
-        z_all = ROOT.TH1F('z_all', 'z_all', 50, -10, 10)
-        for combo in self.combinations:
-            combo_name = ':'.join(combo)
-            residi = self.residuals_map[combo_name]
-            root_numpy.fill_hist(p_all, residi['pValue'].values)
-            root_numpy.fill_hist(z_all, residi['normResid'].values)
-            p_i = ROOT.TH1F('p_' + combo_name, 'p_' + combo_name, 20, 0, 1)
-            z_i = ROOT.TH1F('z_' + combo_name, 'z_' + combo_name, 40, -8, 8)
-            root_numpy.fill_hist(p_i, residi['pValue'].values)
-            root_numpy.fill_hist(z_i, residi['normResid'].values)
-            self.hist_dict['normalized residuals: ' + ' vs '.join(combo)] = z_i
-            self.hist_dict['p-values: ' + ' vs '.join(combo)] = p_i
-        self.hist_dict['all normalized residuals'] = z_all
-        self.hist_dict['all p-values'] = p_all
+        if self.calc_correlations:
+            self._make_correlations_report()
+        if self.calc_significance:
+            self._make_significance_report()
+        if self.calc_residuals:
+            self._make_residuals_report()
 
         # 3. storage
         if self.hist_dict_key:
@@ -536,8 +530,8 @@ class UncorrelationHypothesisTester(Link):
         if self.sk_residuals_map:
             ds[self.sk_residuals_map] = self.residuals_map
             self.logger.debug('Stored residuals map in data store under key: {key}.', key=self.sk_residuals_map)
-        if self.sk_residuals_overview and resid_all:
-            ds[self.sk_residuals_overview] = resid_all
+        if len(self.sk_residuals_overview)>0 and len(self.resid_all)>0:
+            ds[self.sk_residuals_overview] = self.resid_all
             self.logger.debug('Stored residuals list in data store under key: {key}.', key=self.sk_residuals_overview)
 
         return StatusCode.Success
@@ -560,6 +554,147 @@ class UncorrelationHypothesisTester(Link):
 
         return StatusCode.Success
 
+    def _make_correlations_report(self):
+        """Make correlations report pages
+        """
+        f_path = self.results_path + self.prefix + 'all_correlation_pearson.pdf'
+        var_label = 'Pearson correlation matrix (s.d.)'
+        vis_utils.plot_correlation_matrix(self.correlation_matrix, self.x_cols, self.y_cols, f_path, var_label, 0, 1, 'YlGn')
+        stats = [('entries', self.n_entries), ('bins', self.n_bins), ('unique', self.n_unique),
+                 ('> 0.5', (self.correlation_matrix.ravel() > 0.5).sum()),
+                 ('< 0.5', (self.correlation_matrix.ravel() < 0.5).sum()),
+                 ('avg', np.average(self.correlation_matrix.ravel())),
+                 ('max', max(self.correlation_matrix.ravel())),
+                 ('min', min(self.correlation_matrix.ravel()))] if self.nx > 0 and self.ny > 0 else []
+        stats_table = tabulate.tabulate(stats, tablefmt='latex')
+        self.pages.append(self.page_template.replace('VAR_LABEL', var_label)
+                          .replace('VAR_STATS_TABLE', stats_table)
+                          .replace('VAR_HISTOGRAM_PATH', f_path))
+
+    def _make_significance_report(self):
+        """Make significance report pages
+        """
+        f_path = self.results_path + self.prefix + 'all_correlation_significance.pdf'
+        var_label = 'Significance correlation matrix (s.d.)'
+        vis_utils.plot_correlation_matrix(self.significance_matrix, self.x_cols, self.y_cols, f_path, var_label, -5, 5)
+        stats = [('entries', self.n_entries), ('bins', self.n_bins), ('unique', self.n_unique),
+                 ('> 0', (self.significance_matrix.ravel() > 0).sum()),
+                 ('< 0', (self.significance_matrix.ravel() < 0).sum()),
+                 ('avg', np.average(self.significance_matrix.ravel())),
+                 ('max', max(self.significance_matrix.ravel())),
+                 ('min', min(self.significance_matrix.ravel()))] if self.nx > 0 and self.ny > 0 else []
+        stats_table = tabulate.tabulate(stats, tablefmt='latex')
+        self.pages.append(self.page_template.replace('VAR_LABEL', var_label)
+                          .replace('VAR_STATS_TABLE', stats_table)
+                          .replace('VAR_HISTOGRAM_PATH', f_path))
+        significance = self.significance_map.copy()
+        for key in significance:
+            significance[key] = [significance[key]]
+        dfsignificance = pd.DataFrame(significance).stack().reset_index(level=1) \
+                                                           .rename(columns={'level_1': 'Questions', 0: 'Significance'}) \
+                                                           .sort_values(by='Significance', ascending=False)
+        keep_cols = ['Questions', 'Significance']
+        table = latex_residuals_table(dfsignificance, keep_cols, self.z_threshold, norm_resid_col='Significance')
+        if table:
+            self.client_pages.append(
+                self.table_template.replace('VAR_LABEL', 'Significance').replace('VAR_STATS_TABLE', table))
+
+    def _make_residuals_report(self):
+        """Make resididuals report pages
+        """
+        # 2a. create one residual table containing the top non-noncorrelating answers
+        if len(self.combinations) > 1:
+            # create one dataframe containing all data
+            resid_list = []
+            ndim_max = 2
+            for key in self.residuals_map:
+                if self.calc_significance:
+                    if abs(self.significance_map[key]) < self.z_threshold:
+                        continue
+                dftmp = self.residuals_map[key].copy()
+                resid_list.append(self._format_df(dftmp, key))
+                if len(key.split(':')) > ndim_max:
+                    ndim_max = len(key.split(':'))
+            # convert top residuals into latex table
+            if len(resid_list) >= 1:
+                self.resid_all = resid_list[0]
+                if len(resid_list) > 1:
+                    self.resid_all = resid_list[0].append(resid_list[1:], ignore_index=True)
+                self.resid_all = self.resid_all.reindex(self.resid_all.normResid.abs().sort_values(ascending=False).index)
+                keep_cols = ['question_{:d}'.format(i) for i in range(ndim_max)] + \
+                            ['answer_{:d}'.format(i) for i in range(ndim_max)] + \
+                            ['num_entries', 'abcd', 'abcd_error', 'pValue', 'normResid']
+                table = latex_residuals_table(self.resid_all, keep_cols, self.z_threshold)
+                self.pages.append(
+                    self.table_template.replace('VAR_LABEL', 'Most significant outliers').replace('VAR_STATS_TABLE',
+                                                                                                  table))
+                keep_cols = ['question_{:d}'.format(i) for i in range(ndim_max)] + \
+                            ['answer_{:d}'.format(i) for i in range(ndim_max)] + \
+                            ['num_entries', 'abcd', 'normResid']
+                table = latex_residuals_table(self.resid_all, keep_cols, self.z_threshold)
+                self.client_pages.append(
+                    self.table_template.replace('VAR_LABEL', 'Most significant outliers').replace('VAR_STATS_TABLE',
+                                                                                                  table))
+
+        # 2b. make residuals heatmaps
+        for combo in self.combinations:
+            if len(combo) != 2:
+                continue
+            combo_name = ':'.join(combo)
+            if combo_name not in self.residuals_map:
+                continue
+            residi = self.residuals_map[combo_name]
+            mat_normresiduals, x_vals, y_vals = extract_matrix(residi, combo[0], combo[1])
+            mat_observed, x_vals, y_vals = extract_matrix(residi, combo[0], combo[1], 'num_entries')
+            f_path = self.results_path + self.prefix + 'normalized_residuals_heatmap_' + '_'.join(combo) + '.pdf'
+            vis_utils.plot_correlation_matrix(mat_normresiduals, x_vals, y_vals, f_path, 'significance relation', -5, 5,
+                                              x_label=combo[0], y_label=combo[1],
+                                              matrix_numbers=mat_observed,
+                                              print_both_numbers=self.verbose_plots)
+            stats = [('entries', residi['num_entries'].sum()), ('bins', len(residi.index)),
+                     ('> 0', (residi['normResid'] > 0).sum()),
+                     ('< 0', (residi['normResid'] < 0).sum()),
+                     ('avg', residi['normResid'].mean()),
+                     ('max', residi['normResid'].max()),
+                     ('min', residi['normResid'].min())]
+            stats_table = tabulate.tabulate(stats, tablefmt='latex')
+            self.pages.append(self.page_template.replace('VAR_LABEL', 'relation (abcd): ' + ' vs '.join(combo))
+                              .replace('VAR_STATS_TABLE', stats_table)
+                              .replace('VAR_HISTOGRAM_PATH', f_path))
+
+        # 2c. make residuals tables
+        for combo in self.combinations:
+            combo_name = ':'.join(combo)
+            if combo_name not in self.residuals_map:
+                continue
+            residi = self.residuals_map[combo_name]
+            keep_cols = combo + ['num_entries', 'abcd', 'abcd_error', 'pValue', 'normResid']
+            table = latex_residuals_table(residi, keep_cols, self.z_threshold)
+            if not table:
+                continue
+            self.pages.append(
+                self.table_template.replace('VAR_LABEL', 'outliers: ' + ' vs '.join(combo)).replace('VAR_STATS_TABLE',
+                                                                                                    table))
+
+        # 2d. make residuals histograms
+        p_all = ROOT.TH1F('p_all', 'p_all', 20, 0, 1)
+        z_all = ROOT.TH1F('z_all', 'z_all', 50, -10, 10)
+        for combo in self.combinations:
+            combo_name = ':'.join(combo)
+            if combo_name not in self.residuals_map:
+                continue
+            residi = self.residuals_map[combo_name]
+            root_numpy.fill_hist(p_all, residi['pValue'].values)
+            root_numpy.fill_hist(z_all, residi['normResid'].values)
+            p_i = ROOT.TH1F('p_' + combo_name, 'p_' + combo_name, 20, 0, 1)
+            z_i = ROOT.TH1F('z_' + combo_name, 'z_' + combo_name, 40, -8, 8)
+            root_numpy.fill_hist(p_i, residi['pValue'].values)
+            root_numpy.fill_hist(z_i, residi['normResid'].values)
+            self.hist_dict['normalized residuals: ' + ' vs '.join(combo)] = z_i
+            self.hist_dict['p-values: ' + ' vs '.join(combo)] = p_i
+        self.hist_dict['all normalized residuals'] = z_all
+        self.hist_dict['all p-values'] = p_all
+
     def _ignore_categories(self, c, idx=0):
         """Determine list of categories to ignore.
 
@@ -571,6 +706,30 @@ class UncorrelationHypothesisTester(Link):
         if not isinstance(i_c, list):
             i_c = [i_c]
         return i_c
+
+    def _accept_categories(self, c, idx=0):
+        """Determine list of categories to accept.
+
+        :param list c: list of variables, or string variable
+        :param int idx: index of the variable in c, for which to return categories to accept
+        :return: list of categories to accept
+        """
+        i_c = root_helper.get_variable_value(self.var_accept_categories, c, idx, self.accept_categories)
+        if not isinstance(i_c, list):
+            i_c = [i_c]
+        return i_c
+
+    def _ignore_values(self, c, idx=0):
+        """Determine list of values to ignore.
+
+        :param list c: list of variables, or string variable
+        :param int idx: index of the variable in c, for which to return values to ignore
+        :return: list of values to ignore
+        """
+        i_v = root_helper.get_variable_value(self.var_ignore_values, c, idx, self.ignore_values)
+        if not isinstance(i_v, list):
+            i_v = [i_v]
+        return i_v
 
     def _format_df(self, df, key):
         """Bring dataframe in format for overview table.
@@ -590,7 +749,6 @@ class UncorrelationHypothesisTester(Link):
         return df
 
 
-# @jit(cache=True) # disabled
 def extract_matrix(df, x_col, y_col, v_col='normResid'):
     """Extract matrix from dataframe.
 
