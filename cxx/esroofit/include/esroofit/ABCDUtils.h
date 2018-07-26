@@ -56,6 +56,7 @@ namespace Eskapade
         // The function returns the (Gaussian) Z-value of this p-value.
         Double_t SignificanceOfUncorrelatedHypothesis(RooDataHist &dataHist, const RooArgSet &obsSet,
                                                       Int_t nSamples = 500);
+        Double_t Chi2OfUncorrelatedHypothesis(RooDataHist &dataHist, const RooArgSet &obsSet);
 
         // 2.
         // This function returns a dataset with the normalized residuals (= pull values) for all bins of the

@@ -303,6 +303,24 @@ Eskapade::ABCD::GenerateAndCollectResiduals(const RooAbsPdf &genpdf, RooArgSet &
 
 
 Double_t
+Eskapade::ABCD::Chi2OfUncorrelatedHypothesis(RooDataHist &dataHist, const RooArgSet &obsSet)
+{
+    // turn off all roofit messages for now
+    RooMsgService::instance().saveState();
+    RooMsgService::instance().setGlobalKillBelow(RooFit::FATAL); // kill all below fatal
+
+    // chi2 value of original dataset
+    RooABCDHistPdf pdf("abcd", "abcd", obsSet, dataHist, false, true); // no abcd, no parameters (fast!)
+    RooAbsReal *chi2var = pdf.createChi2(dataHist);
+    Double_t chi2_value_data = chi2var->getVal();
+
+    RooMsgService::instance().restoreState();
+
+    return chi2_value_data;
+}
+
+
+Double_t
 Eskapade::ABCD::SignificanceOfUncorrelatedHypothesis(RooDataHist &dataHist, const RooArgSet &obsSet,
                                                      Int_t nSamples)
 {
