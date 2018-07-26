@@ -15,6 +15,7 @@
 #pragma link C++ class RooABCDHistPdf+;
 #pragma link C++ class RooExpandedFitResult+;
 #pragma link C++ class RooWeibull+;
+#pragma link C++ class RooBurr+;
 #pragma link C++ class RooNonCentralBinning+;
 #pragma link C++ class RhhNDKeysPdf+;
 

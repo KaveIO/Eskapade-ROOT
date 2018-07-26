@@ -24,13 +24,12 @@ from ROOT import RooFit
 import sys
 
 from eskapade.logger import LogLevel, Logger
-
 from esroofit import resources
 
 CUSTOM_ROOFIT_OBJECTS = ('RooComplementCoef',
                          'RooNonCentralBinning',
                          'RooTruncExponential',
-                         'RooWeibull',
+                         'RooWeibull', 'RooBurr',
                          ('Eskapade', 'PlotCorrelationMatrix'))
 
 

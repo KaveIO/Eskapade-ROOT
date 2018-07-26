@@ -118,6 +118,7 @@ set(ESROOFIT_INCLUDE_FILES
         ${ESROOFIT_INCLUDE_DIR}/esroofit/RooParamHistPdf.h
         ${ESROOFIT_INCLUDE_DIR}/esroofit/RooTruncExponential.h
         ${ESROOFIT_INCLUDE_DIR}/esroofit/RooWeibull.h
+        ${ESROOFIT_INCLUDE_DIR}/esroofit/RooBurr.h
         ${ESROOFIT_INCLUDE_DIR}/esroofit/Statistics.h
         ${ESROOFIT_INCLUDE_DIR}/esroofit/TMsgLogger.h
         )
@@ -138,6 +139,7 @@ set(ESROOFIT_CXX_FILES
         ${ESROOFIT_SRC_DIR}/RooParamHistPdf.cxx
         ${ESROOFIT_SRC_DIR}/RooTruncExponential.cxx
         ${ESROOFIT_SRC_DIR}/RooWeibull.cxx
+        ${ESROOFIT_SRC_DIR}/RooBurr.cxx
         ${ESROOFIT_SRC_DIR}/Statistics.cxx
         ${ESROOFIT_SRC_DIR}/TMsgLogger.cxx
         )
