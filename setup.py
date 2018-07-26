@@ -35,7 +35,7 @@ if DEV:
     FULL_VERSION += '.dev'
 
 REQUIREMENTS = [
-    'eskapade==0.8.0.dev',
+    'eskapade>=0.8.0.dev',
 ]
 
 CMD_CLASS = dict()
@@ -85,7 +85,7 @@ try:
 
     EXTERNAL_MODULES.append(CMakeExtension('esroofit.lib.esroofit', 'cxx/esroofit'))
     CMD_CLASS['build_ext'] = CMakeBuild
-    REQUIREMENTS.append('root_numpy==4.7.3')
+    REQUIREMENTS.append('root_numpy>=4.7.3')
 except ImportError:
     logger.fatal('PyROOT and RooFit are missing! Not going to install ROOT analysis modules!')
     EXCLUDE_PACKAGES.append('*root_analysis*')
@@ -171,7 +171,7 @@ def setup_package() -> None:
               NAME.lower(): ['data/*']
           },
           install_requires=REQUIREMENTS,
-          tests_require=['pytest==3.2.2'],
+          tests_require=['pytest>=3.2.2'],
           ext_modules=EXTERNAL_MODULES,
           cmdclass=CMD_CLASS,
           command_options=COMMAND_OPTIONS,
