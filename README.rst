@@ -6,7 +6,8 @@ Version: 0.8
 
 Released: Aug 2018
 
-Eskapade-ROOT is the ROOT extension of Eskapade.
+Eskapade is a light-weight, python-based data analysis framework, meant for modularizing all sorts of data analysis problems.
+Eskapade-ROOT is the ROOT-based extension of Eskapade.
 
 
 Documentation
