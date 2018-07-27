@@ -9,6 +9,14 @@ Released: Aug 2018
 Eskapade-ROOT is the ROOT extension of Eskapade.
 
 
+Documentation
+=============
+
+For documentation on the ROOT extension of Eskapade, please see the original Eskapade documentation `here <http://eskapade.readthedocs.io>`_.
+In particular, check out the RooFit section of the Tutorials.
+
+
+
 Release notes
 =============
 
@@ -20,13 +28,6 @@ into a separate package.
 
 This way, Eskapade v0.8 no longer depends on ROOT. This new package does require ROOT to install, clearly.
 
-
-
-Documentation
-=============
-
-For documentation on the ROOT extension of Eskapade, please see the original Eskapade documentation `here <http://eskapade.readthedocs.io>`_.
-In particular, check out the RooFit section of the Tutorials.
 
 
 Installation
