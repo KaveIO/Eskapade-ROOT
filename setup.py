@@ -22,12 +22,12 @@ from setuptools.command.test import test as TestCommand
 
 from setup_cxx import CMakeExtension, CMakeBuild
 
-NAME = 'Esroofit'
+NAME = 'Eskapade-ROOT'
 
 MAJOR = 0
 REVISION = 8
 PATCH = 0
-DEV = True
+DEV = False
 
 VERSION = '{major}.{revision}.{patch}'.format(major=MAJOR, revision=REVISION, patch=PATCH)
 FULL_VERSION = VERSION
