@@ -35,7 +35,7 @@ if DEV:
     FULL_VERSION += '.dev'
 
 REQUIREMENTS = [
-    'eskapade>=0.8.0.dev',
+    'eskapade>=0.8.0',
 ]
 
 CMD_CLASS = dict()
