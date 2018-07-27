@@ -339,7 +339,7 @@ def df_to_tree(df, name='tree', tree=None, store_index=True):
     for col in df_.columns:
         # 1. convert categorical data and boolians to integers
         dt = df_[col].dtype
-        if pd.core.common.is_categorical(dt) or dt == 'bool':
+        if dt == 'bool' or dt.name == 'category':
             labels, unique = df_[col].factorize()
             df_[col] = labels
             # store the mapping for possible use in roocategories

@@ -167,7 +167,7 @@ class ConvertDataFrame2RooDataSet(Link):
         for col in self.columns[:]:
             dt = df[col].dtype.type
             # keep categorical observables -- convert these to roocategories in conversion
-            if pd.core.common.is_categorical(dt):
+            if df[col].dtype.name == 'category':
                 continue
             # reject all string-based columns
             if (dt is np.string_) or (dt is np.object_):
