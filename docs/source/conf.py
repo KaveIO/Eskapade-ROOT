@@ -7,23 +7,13 @@
 import os
 from esroofit import version as esversion
 
-from unittest.mock import MagicMock
-
 # Classes that use non-python modules are not always available in the
 # RTD environment. By mocking them we can still import these classes
 # in the code and RTD can subsequently go through the code and get 
 # the docstrings.
 
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-        return MagicMock()
-
-
-MOCK_MODULES = ['ROOT',
-                'root_numpy']
-
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+autodoc_mock_imports = ['ROOT',
+                        'root_numpy']
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
