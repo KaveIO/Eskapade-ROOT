@@ -101,7 +101,7 @@ In fact, this last snippet of code is used in the tutorial macro right below.
 Running the tutorial macro
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Let's take a look at the steps in tutorial macro  ``python/esroofit/tutorials/tutorial_5.py``.
+Let's take a look at the steps in tutorial macro  ``$TUTDIR/tutorial_5.py``.
 The macro illustrates how do basic statistical data analysis with roofit, by making use of the ``RooWorkspace`` functionality.
 A ``RooWorkspace`` is a persistable container for RooFit projects. A workspace can contain and own variables, p.d.f.s, functions and datasets.
 The example shows how to define a pdf, simulate data, fit this data, and then plot the fit result.
@@ -111,7 +111,7 @@ The next step is to run the tutorial macro.
 
 .. code-block:: bash
 
-  $ eskapade_run python/esroofit/tutorials/tutorial_5.py
+  $ eskapade_run $TUTDIR/tutorial_5.py
 
 Let's discuss what we are seeing on the screen.
 

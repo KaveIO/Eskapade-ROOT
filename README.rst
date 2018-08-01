@@ -87,7 +87,25 @@ To load the Eskapade ROOT library in python, do:
 
 **Congratulations, you are now ready to use Eskapade-ROOT!**
 
-For all available examples, please see the `tutorials <http://eskapade-root.readthedocs.io>`_.
+
+Quick run
+=========
+
+To see the available Eskapade example, do:
+
+.. code-block:: bash
+
+  $ export TUTDIR=`pip show Eskapade-ROOT | grep Location | awk '{ print $2"/esroofit/tutorials" }'`
+  $ ls -l $TUTDIR/
+
+E.g. you can now run:
+
+.. code-block:: bash
+
+  $ eskapade_run $TUTDIR/esk401_roothist_fill_plot_convert.py
+
+
+For all available examples, please see the `tutorials <http://eskapade-root.readthedocs.io/en/latest/tutorials.html>`_.
 
 
 Contact and support

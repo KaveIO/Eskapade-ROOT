@@ -3,23 +3,29 @@ Tutorials
 =========
 
 This section contains materials on how to use Eskapade-ROOT.
-All command examples are run from the root of the repository if not otherwise stated.
+All command examples can be run from any directory with write access.
 For more in depth explanations on the functionality of the code-base,
-try the `API docs <eskapade_index.html>`_.
+try the `API docs <code.html>`_.
 
 
 
 All ROOT Examples in Eskapade
 ------------------------------
 
-All Eskapade-ROOT example macros can be found in the ``python/esroofit/tutorials`` directory.
+All Eskapade-ROOT example macros can be found in the tutorials directory.
+For ease of use, let's make a shortcut to the directory containing the tutorials:
+
+.. code-block:: bash
+
+  $ export TUTDIR=`pip show Eskapade-ROOT | grep Location | awk '{ print $2"/esroofit/tutorials" }'`
+  $ ls -l $TUTDIR/
+
 The numbering of the example macros follows the package structure:
 
 * ``esk400+``: macros for processing ROOT datasets and performing analysis with ROOT.
 
 These macros are briefly described below.
 You are encouraged to run all examples to see what they can do for you!
-
 
 
 Example esk401: root histogram fill, plot, and convert
@@ -30,6 +36,11 @@ pandas dataframe. In turn, these histogram are: 2) plotted,
 3) converted to a roofit histogram (roodatahist), and 4) converted to a
 roofit dataset (roodataset).
 
+.. code-block:: bash
+
+  $ eskapade_run $TUTDIR/esk401_roothist_fill_plot_convert.py
+
+
 Example esk402: roodatahist filling from a pandas dataframe
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -38,12 +49,22 @@ pandas dataframe. (A roodatahist can be filled iteratively, while looping
 over multiple pandas dataframes.) The roodatahist can be used to create
 a roofit histogram-pdf (roohistpdf).
 
+.. code-block:: bash
+
+  $ eskapade_run $TUTDIR/esk402_roodatahist_fill.py
+
+
 Example esk403: roodataset conversion into dataframe and back
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This macro illustrates how to convert a pandas dataframe to a roofit dataset
 (= roodataset), do something to it with roofit, and then convert the roodataset
 back again to a pandas dataframe.
+
+.. code-block:: bash
+
+  $ eskapade_run $TUTDIR/esk403_roodataset_convert.py
+
 
 Example esk404: workspace to create a pdf, simulate, fit, and plot
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -56,6 +77,11 @@ and then plot the fit result.
 
 The generated data is converted to a dataframe and the contents is plotted
 with a default plotter link.
+
+.. code-block:: bash
+
+  $ eskapade_run $TUTDIR/esk404_workspace_createpdf_simulate_fit_plot.py
+
 
 Example esk405: simulation based on binned data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -82,6 +108,11 @@ When false, the roodatahist contains 3 observables, of which two continous and
 1 categorical. When true, the roodatahist is 6 dimensional, with 4 continous
 observables and 2 categorical ones. The latter example is slower, but works fine!
 
+.. code-block:: bash
+
+  $ eskapade_run $TUTDIR/esk405_simulation_based_on_binned_data.py
+
+
 Example esk406: simulation based on unbinned data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -100,6 +131,11 @@ This macro has two settings, controlled with settings['high_num_dims'].
 When false, the keys pdf contains 2 continuous observables. When true,
 the keys pdf 3 dimensional.
 
+.. code-block:: bash
+
+  $ eskapade_run $TUTDIR/esk406_simulation_based_on_unbinned_data.py
+
+
 Example esk407: classification unbiased fit estimate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -115,6 +151,11 @@ testing samples to (at least) get an unbiased estimate of the total number of
 high-risk clients. This is done by fitting the (unbiased) testing templates
 to the score distribution in the actual dataset. The shapes differentiate
 the number of high- and low-risk clients.
+
+.. code-block:: bash
+
+  $ eskapade_run $TUTDIR/esk407_classification_unbiased_fit_estimate.py
+
 
 Example esk408: classification error propagation after fit
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -138,6 +179,11 @@ to each probability.
 The total sum of these probabilities equals the number of estimated high-risk
 clients, as also obtained in example esk407.
 
+.. code-block:: bash
+
+  $ eskapade_run $TUTDIR/esk408_classification_error_propagation_after_fit.py
+
+
 Example esk409: unredeemed vouchers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -160,6 +206,11 @@ to (generated) redeem-event data, the total number of redeems at
 infinite voucher ages is estimated by scaling to the surface of
 an untruncated PDF with identical parameter values.
 
+.. code-block:: bash
+
+  $ eskapade_run $TUTDIR/esk409_unredeemed_vouchers.py
+
+
 Example esk410: testing correlations between categories
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -175,11 +226,22 @@ calculated. A detailed description of the method can be found in ABCDutils.h.
 A description of the method to calculate the expected frequencies can be found *
 in RooABCDHistPDF.cxx.
 
+.. code-block:: bash
+
+  $ eskapade_run $TUTDIR/esk410_testing_correlations_between_categories.py
+
+
 Example esk411: weibull predictive maintenance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Macro illustrates how to fit several Weibull distributions to a falling
 time difference distribution, indicating times between maintenance. The
 Weibull probability distribution is provided by Eskapade.
+
+.. code-block:: bash
+
+  $ eskapade_run $TUTDIR/esk411_weibull_predictive_maintenance.py
+
+
 
 .. include:: tutorial_roofit.rst
