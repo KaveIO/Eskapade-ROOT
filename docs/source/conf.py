@@ -19,7 +19,8 @@ version = '0.8.0'
 # the docstrings.
 
 autodoc_mock_imports = ['ROOT',
-                        'root_numpy']
+                        'root_numpy',
+                        'esroofit.resources']
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
