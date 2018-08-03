@@ -25,7 +25,7 @@ To make sure that everything works try executing eskapade without any arguments,
 
 .. code-block:: bash
 
-  eskapade_run
+  eskapade_run --help
 
 or you could just execute the tests using either the eskapade test runner, e.g.
 

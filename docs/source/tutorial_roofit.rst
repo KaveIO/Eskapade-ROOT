@@ -80,10 +80,11 @@ Finally, let's compile the C++ code of these classes:
 
 .. code-block:: bash
 
-   $ mkdir $ESKAPADE/build
-   $ cd $ESKAPADE/build
-   $ cmake ../cxx/esroofit
-   $ cmake --build .
+   $ cd cxx
+   $ cmake esroofit
+   $ cmake --build . -- -j1
+   $ cd ../
+   $ pip install -e .
 
 You should see the compiler churning away, processing several existing classes but also ``MyPdfV2`` and ``MyPdfV3``.
 
@@ -91,7 +92,7 @@ We are now able to open the Eskapade roofit library, so we can use these classes
 
 .. code-block:: python
 
-   from eskapade.root_analysis import roofit_utils
+   from esroofit import roofit_utils
    roofit_utils.load_libesroofit()
 
 In fact, this last snippet of code is used in the tutorial macro right below.
@@ -126,7 +127,7 @@ The macro first checks the existence of the class ``MyPdfV3`` that we just creat
    # --- 0. make sure Eskapade RooFit library is loaded
 
    # --- load and compile the Eskapade roofit library
-   from eskapade.root_analysis import roofit_utils
+   from esroofit import roofit_utils
    roofit_utils.load_libesroofit()
 
    # --- check existence of class MyPdfV3 in ROOT
@@ -159,7 +160,7 @@ found at `commands <https://root.cern.ch/doc/master/RooFactoryWSTool_8cxx_source
    ch = Chain('WsOps')
 
    # --- instantiate a pdf
-   wsu = root_analysis.WsUtils(name = 'modeller')
+   wsu = WsUtils(name = 'modeller')
    wsu.factory = ["MyPdfV3::testpdf(y[-10,10],A[10,0,100],B[2,-10,10])"]
    ch.add(wsu)
 
@@ -173,7 +174,7 @@ The link ``WsUtils`` is then used to simulate records according to the shape of 
 
 .. code-block:: python
 
-   wsu = root_analysis.WsUtils(name = 'simulater')
+   wsu = WsUtils(name = 'simulater')
    wsu.add_simulate(pdf='testpdf', obs='y', num=400, key='simdata')
    ch.add(wsu)
 
@@ -188,7 +189,7 @@ Another version of the link ``WsUtils`` is then used to fit the simulated record
 
 .. code-block:: python
 
-   wsu = root_analysis.WsUtils(name = 'fitter')
+   wsu = WsUtils(name = 'fitter')
    wsu.pages_key='report_pages'
    wsu.add_fit(pdf='testpdf', data='simdata', key='fit_result')
    ch.add(wsu)
@@ -206,7 +207,7 @@ Finally, the last version of the link ``WsUtils`` is used to plot the result of 
 
 .. code-block:: python
 
-   wsu = root_analysis.WsUtils(name = 'plotter')
+   wsu = WsUtils(name = 'plotter')
    wsu.pages_key='report_pages'
    wsu.add_plot(obs='y', data='simdata', pdf='testpdf', pdf_kwargs={'VisualizeError': 'fit_result', 'MoveToBack': ()}, key='simdata_plot')
    wsu.add_plot(obs='y', pdf='testpdf', file='fit_of_simdata.pdf', key='simdata_plot')
