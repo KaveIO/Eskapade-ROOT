@@ -143,7 +143,9 @@ Eskapade::PoissonObsMidP(Double_t mainObs, Double_t backgroundObs, Double_t rela
   // Converting from discrete (Poisson) to continuous interpretation (Gaussian),
   // to do so, we are applying the Lancaster mid-p correction
   // E.g. see for details: http://www.stat.ufl.edu/~aa/articles/agresti_gottard_2005.pdf
-  Double_t mid_p = 0.5 * TMath::Poisson(mainObs,backgroundObs);
+  Double_t mid_p = 0.5 * (p - Eskapade::PoissonObsP(mainObs+1, backgroundObs, relativeBkgUncert));
+  //Double_t mid_p = 0.5 * TMath::Poisson(mainObs,backgroundObs);
+
   p -= mid_p;
 
   return p;
