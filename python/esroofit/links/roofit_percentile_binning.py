@@ -41,17 +41,21 @@ class RooFitPercentileBinning(Link):
         :param float min_value: min value for all variables. Default is None (optional)
         :param float max_value: max value for all variables. Default is None (optional)
         :param bool non_central_binning: if false, use regular RooBinning class. Default is RooNonCentralBinning.
+        :param list columns: list of columns to make percentile bins for. picks up default number of bins (optional).
+        :param int default_number_of_bins: default number of bins for continuous observables. Default setting is 10.
         """
         # initialize link and process arguments
         Link.__init__(self, kwargs.pop('name', 'RooFitPercentileBinning'))
         self._process_kwargs(kwargs, read_key='', from_ws=False, binning_name='percentile', var_number_of_bins={}, var_binning={},
-                             var_min_value={}, var_max_value={}, min_value=None, max_value=None, non_central_binning=True)
+                             var_min_value={}, var_max_value={}, min_value=None, max_value=None, non_central_binning=True,
+                             default_number_of_bins=10, columns=[])
         self.check_extra_kwargs(kwargs)
 
     def initialize(self):
         """Initialize the link.."""
         # check input arguments
-        self.check_arg_types(read_key=str, binning_name=str)
+        self.check_arg_types(read_key=str, binning_name=str, default_number_of_bins=int)
+        self.check_arg_types(recurse=True, allow_none=False, columns=str)
         self.check_arg_vals('read_key', 'binning_name', 'var_number_of_bins')
 
         # make sure Eskapade RooFit library is loaded for the RooNonCentralBinning class
@@ -73,6 +77,11 @@ class RooFitPercentileBinning(Link):
             if self.read_key not in ds:
                 raise KeyError('Key "{}" not found in datastore.'.format(self.read_key))
             data = ds[self.read_key]
+
+        # add self.columns to var_number_of_bins, which are processed below
+        for col in self.columns:
+            if col not in self.var_number_of_bins:
+                self.var_number_of_bins[col] = self.default_number_of_bins
 
         # check presence of all columns; check data type
         columns = list(self.var_number_of_bins.keys())
