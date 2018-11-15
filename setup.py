@@ -29,6 +29,8 @@ REVISION = 8
 PATCH = 1
 DEV = False
 
+# Note: also update version at: docs/source/conf.py
+
 VERSION = '{major}.{revision}.{patch}'.format(major=MAJOR, revision=REVISION, patch=PATCH)
 FULL_VERSION = VERSION
 if DEV:
