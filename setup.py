@@ -37,7 +37,7 @@ if DEV:
     FULL_VERSION += '.dev'
 
 REQUIREMENTS = [
-    'eskapade>=0.8.1',
+    'eskapade>=0.8.2',
     'root_numpy>=4.7.3',
 ]
 
