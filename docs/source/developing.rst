@@ -10,7 +10,7 @@ First clone Eskapade-ROOT.
 
 .. code-block:: bash
 
-  git clone git@github.com:KaveIO/Eskapade-ROOT.git eskapade-root
+  git clone https://github.com:KaveIO/Eskapade-ROOT.git eskapade-root
 
 then
 

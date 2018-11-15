@@ -51,7 +51,7 @@ Alternatively, you can check out the repository from github and install it yours
 
 .. code-block:: bash
 
-  $ git clone git@github.com:KaveIO/Eskapade-ROOT.git eskapade-root
+  $ git clone https://github.com:KaveIO/Eskapade-ROOT.git eskapade-root
 
 To (re)install the python code from your local directory, type from the top directory:
 
