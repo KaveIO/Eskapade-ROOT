@@ -495,8 +495,6 @@ class UncorrelationHypothesisTester(Link):
             # b) calculate residuals
             if self.calc_residuals:
                 success = ROOT.Eskapade.ABCD.checkInputData(rdh)
-                self.logger.debug(
-                    'Can calculate residuals? {status}.', status=success)
                 if not success:
                     self.logger.warning('Cannot calculate residuals for combination: {comb!s}. Skipping.', comb=combo)
                     del rdh

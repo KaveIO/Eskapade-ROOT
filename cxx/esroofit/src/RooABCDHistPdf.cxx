@@ -164,14 +164,16 @@ Double_t RooABCDHistPdf::getEntriesError(Int_t ibin) const
     for (Int_t j = 0; j < _ndim + 1; j++)
     {
         Double_t y = bcdVec[j];
-        Double_t ym1, yp1;
-        RooHistError::instance().getPoissonInterval(y, ym1, yp1, 1);
+        Double_t yerr = ( y >= 1 ? sqrt(y) : 1.0 );
+        Double_t ym1  = ( y - yerr >= 0 ? y - yerr : 0.0 ) ;
+        Double_t yp1  = y + yerr;
         bcdCopy[j] = yp1;
         Double_t Ap1 = this->abcdFunction(bcdCopy);
         bcdCopy[j] = ym1;
         Double_t Am1 = this->abcdFunction(bcdCopy);
+
         // store 1 sigma variation
-        Double_t dA = (Ap1 - Am1) / 2.;
+        Double_t dA = (Ap1 - Am1) / ( y > 0 ? 2. : 1. ) ;
         sigmaA += dA * dA;
         // reset for next iteration
         bcdCopy[j] = y;
