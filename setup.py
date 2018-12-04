@@ -26,10 +26,10 @@ NAME = 'Eskapade-ROOT'
 
 MAJOR = 0
 REVISION = 8
-PATCH = 3
+PATCH = 5
 DEV = False
 
-# Note: also update version at: docs/source/conf.py
+# Note: also update version at: README.rst and docs/source/conf.py
 
 VERSION = '{major}.{revision}.{patch}'.format(major=MAJOR, revision=REVISION, patch=PATCH)
 FULL_VERSION = VERSION
