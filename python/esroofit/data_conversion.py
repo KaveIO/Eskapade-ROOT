@@ -465,16 +465,20 @@ def rds_to_tree(rds, tree_name='', ignore_lost_records=False):
     if rds is None:
         return None
 
-    # direct conversion from rds only works if internal storage is a tree
-    storage_type = ROOT.RooAbsData.getDefaultStorageType()
-    if storage_type == ROOT.RooAbsData.Tree:
-        tree = rds.tree().Clone()
+    version = float(ROOT.gROOT.GetVersion().replace('/',''))
+    if version >= 6.14:
+        tree = rds.GetClonedTree()
     else:
-        # convert to make it so.
-        ROOT.RooAbsData.setDefaultStorageType(ROOT.RooAbsData.Tree)
-        new_rds = ROOT.RooDataSet(uuid.uuid4().hex, rds.GetTitle(), rds, rds.get())
-        tree = new_rds.tree().Clone()
-        del new_rds
+        # direct conversion from rds only works if internal storage is a tree
+        storage_type = ROOT.RooAbsData.getDefaultStorageType()
+        if storage_type == ROOT.RooAbsData.Tree:
+            tree = rds.tree().Clone()
+        else:
+            # convert to make it so.
+            ROOT.RooAbsData.setDefaultStorageType(ROOT.RooAbsData.Tree)
+            new_rds = ROOT.RooDataSet(uuid.uuid4().hex, rds.GetTitle(), rds, rds.get())
+            tree = new_rds.tree().Clone()
+            del new_rds
 
     # basic check of contents
     if not ignore_lost_records:
