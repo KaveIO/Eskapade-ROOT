@@ -29,7 +29,7 @@ set(REQUIRED_ROOT_VERSION_LINUX 6.10.04)
 # The version of ROOT that we require when using macOS.
 set(REQUIRED_ROOT_VERSION_MACOS 6.10.08)
 # The set of options that ROOT should have been compiled with.
-set(ROOT_OPTIONS cxx11 roofit thread)
+set(ROOT_OPTIONS minuit2 cxx11 roofit thread)
 # The set of components that should be present in ROOT.
 set(ROOT_COMPONENTS PyROOT RooFitCore RooFit RooStats)
 
@@ -71,7 +71,7 @@ if(ROOT_FOUND)
         else()
             fatal_info("ROOT is not compiled with option \"-D${root_option}=ON\"!")
             fatal_info("Please reconfigure and recompile root with the following CMake flags:")
-            fatal_info("    -Droofit=ON -Dthread=ON -DPYTHON_EXECUTABLE=path_to_python_exe -DPYTHON_INCLUDE_DIR=path_to_python_include -DPYTHON_LIBRARY=path_to_python_lib")
+            fatal_info("  -Droofit=ON -Dminuit2=ON -Dthread=ON -DPYTHON_EXECUTABLE=path_to_python_exe -DPYTHON_INCLUDE_DIR=path_to_python_include -DPYTHON_LIBRARY=path_to_python_lib")
             fatal_info("You may need to install additional third party libraries, see \"https:://root.cern.ch/building-root\" for more info on building ROOT.")
             fatal_abort("Aborting!")
         endif()
