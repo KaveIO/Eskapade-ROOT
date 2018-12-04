@@ -29,9 +29,9 @@ set(REQUIRED_ROOT_VERSION_LINUX 6.10.04)
 # The version of ROOT that we require when using macOS.
 set(REQUIRED_ROOT_VERSION_MACOS 6.10.08)
 # The set of options that ROOT should have been compiled with.
-set(ROOT_OPTIONS cxx11 fftw3 mathmore python3 roofit soversion thread tmva)
+set(ROOT_OPTIONS cxx11 fftw3 mathmore python3 roofit soversion thread)
 # The set of components that should be present in ROOT.
-set(ROOT_COMPONENTS Minuit2 PyROOT RooFitCore RooFit RooStats TMVA)
+set(ROOT_COMPONENTS Minuit2 PyROOT RooFitCore RooFit RooStats)
 
 # Include cmake/Common.cmake.
 include(Common)
@@ -44,11 +44,20 @@ info("${PROJECT_NAME} CXX flags: ${ESROOFIT_CXX_FLAGS}")
 info()
 info("Searching for ROOT Data Analysis Framework:")
 
+#set(CMAKE_FIND_PACKAGE_SORT_ORDER NATURAL)
+#set(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
+
 # Let's try to find ROOT and the necessary ROOT components.
+#if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+#    find_package(ROOT ${REQUIRED_ROOT_VERSION_MACOS} EXACT REQUIRED COMPONENTS ${ROOT_COMPONENTS})
+#else()
+#    find_package(ROOT ${REQUIRED_ROOT_VERSION_LINUX} EXACT REQUIRED COMPONENTS ${ROOT_COMPONENTS})
+#endif()
+
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    find_package(ROOT ${REQUIRED_ROOT_VERSION_MACOS} EXACT REQUIRED COMPONENTS ${ROOT_COMPONENTS})
+    find_package(ROOT REQUIRED QUIET COMPONENTS ${ROOT_COMPONENTS})
 else()
-    find_package(ROOT ${REQUIRED_ROOT_VERSION_LINUX} EXACT REQUIRED COMPONENTS ${ROOT_COMPONENTS})
+    find_package(ROOT REQUIRED QUIET COMPONENTS ${ROOT_COMPONENTS})
 endif()
 
 if(ROOT_FOUND)
@@ -72,7 +81,7 @@ if(ROOT_FOUND)
         else()
             fatal_info("ROOT is not compiled with option \"-D${root_option}=ON\"!")
             fatal_info("Please reconfigure and recompile root with the following CMake flags:")
-            fatal_info("    -Dfftw3=ON -Dmathmore=ON -Dminuit2=ON -Droofit=ON -Dtmva=ON -Dsoversion=ON -Dthread=ON -Dpython3=ON -DPYTHON_EXECUTABLE=path_to_python_exe -DPYTHON_INCLUDE_DIR=path_to_python_include -DPYTHON_LIBRARY=path_to_python_lib")
+            fatal_info("    -Dfftw3=ON -Dmathmore=ON -Dminuit2=ON -Droofit=ON -Dsoversion=ON -Dthread=ON -Dpython3=ON -DPYTHON_EXECUTABLE=path_to_python_exe -DPYTHON_INCLUDE_DIR=path_to_python_include -DPYTHON_LIBRARY=path_to_python_lib")
             fatal_info("You may need to install additional third party libraries, see \"https:://root.cern.ch/building-root\" for more info on building ROOT.")
             fatal_abort("Aborting!")
         endif()
