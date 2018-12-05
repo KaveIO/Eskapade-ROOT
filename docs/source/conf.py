@@ -11,7 +11,7 @@ import os
 #version = esversion.full_version
 
 # hard-code the version for now. readthedocs cannot import esroofit.
-version = '0.8.5'
+version = '0.8.6'
 
 # Classes that use non-python modules are not always available in the
 # RTD environment. By mocking them we can still import these classes

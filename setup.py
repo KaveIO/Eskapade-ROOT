@@ -27,7 +27,7 @@ NAME = 'Eskapade-ROOT'
 
 MAJOR = 0
 REVISION = 8
-PATCH = 5
+PATCH = 6
 DEV = False
 
 # Note: also update version at: README.rst and docs/source/conf.py
