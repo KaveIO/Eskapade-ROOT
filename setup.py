@@ -98,6 +98,7 @@ except ImportError:
         logger.fatal('PyROOT and RooFit are missing! Not going to install ROOT analysis modules!')
         EXCLUDE_PACKAGES.append('*root_analysis*')
         EXCLUDE_PACKAGES.append('*root_numpy*')
+        raise RuntimeError('root-config is not in PATH and ROOTSYS is not set. Is ROOT installed correctly?')
 
 # This is for auto-generating documentation.
 # One can generate documentation by executing:
