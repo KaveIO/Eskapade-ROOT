@@ -13,6 +13,7 @@ modification, are permitted according to the terms listed in the file
 LICENSE.
 """
 
+import os
 import logging
 import sys
 
@@ -36,9 +37,10 @@ FULL_VERSION = VERSION
 if DEV:
     FULL_VERSION += '.dev'
 
+root_numpy_req = 'root_numpy>=4.7.3'
 REQUIREMENTS = [
     'eskapade>=0.8.2',
-    'root_numpy>=4.7.3',
+    root_numpy_req,
 ]
 
 CMD_CLASS = dict()
@@ -89,8 +91,13 @@ try:
     EXTERNAL_MODULES.append(CMakeExtension('esroofit.lib.esroofit', 'cxx/esroofit'))
     CMD_CLASS['build_ext'] = CMakeBuild
 except ImportError:
-    logger.fatal('PyROOT and RooFit are missing! Not going to install ROOT analysis modules!')
-    EXCLUDE_PACKAGES.append('*root_analysis*')
+    # installing on readthedocs?
+    if os.environ.get('READTHEDOCS') == 'True':
+        REQUIREMENTS.remove(root_numpy_req)
+    else:
+        logger.fatal('PyROOT and RooFit are missing! Not going to install ROOT analysis modules!')
+        EXCLUDE_PACKAGES.append('*root_analysis*')
+        EXCLUDE_PACKAGES.append('*root_numpy*')
 
 # This is for auto-generating documentation.
 # One can generate documentation by executing:
