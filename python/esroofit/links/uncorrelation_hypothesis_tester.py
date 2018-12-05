@@ -5,7 +5,7 @@ Class: UncorrelationHypothesisTester
 Created: 2017/05/27
 
 Description:
-    Algorithm to test for correlations between categorical observables
+    Algorithm to test for correlations between categorical observables.
 
 Authors:
     KPMG Advanced Analytics & Big Data team, Amstelveen, The Netherlands
@@ -90,6 +90,7 @@ class UncorrelationHypothesisTester(Link):
         :param str read_key: key of input data to read from data store
         :param str read_key_vars: key of input rooargset of observables in data store (optional)
         :param bool from_ws: if true, pick up input roodataset from workspace, not datastore. Default is false.
+        :param str correlation_key: key of calculated correlation matrix to store in data store
         :param str significance_key: key of calculated significance matrix to store in data store
         :param str sk_significance_map: key of calculated significance map to store in data store
         :param str sk_residuals_map: key of calculated residuals map to store in data store
@@ -132,6 +133,7 @@ class UncorrelationHypothesisTester(Link):
                              var_ignore_values={},
                              ignore_values=[],
                              nsims_per_significance=250,
+                             correlation_key='correlation_matrix',
                              significance_key='significance_matrix',
                              sk_significance_map='',
                              sk_residuals_map='',
@@ -531,6 +533,10 @@ class UncorrelationHypothesisTester(Link):
         if len(self.sk_residuals_overview)>0 and len(self.resid_all)>0:
             ds[self.sk_residuals_overview] = self.resid_all
             self.logger.debug('Stored residuals list in data store under key: {key}.', key=self.sk_residuals_overview)
+        if self.correlation_key:
+            ds[self.correlation_key] = pd.DataFrame(self.correlation_matrix, index=self.columns, columns=self.columns)
+        if self.significance_key:
+            ds[self.significance_key] = pd.DataFrame(self.significance_matrix, index=self.columns, columns=self.columns)
 
         return StatusCode.Success
 
