@@ -27,7 +27,7 @@ import ROOT
 from ROOT import RooFit
 
 from eskapade import process_manager, resources, DataStore, Link, StatusCode
-from eskapade.core import persistence
+from escore.core import persistence
 
 from esroofit import roofit_utils, RooFitManager
 

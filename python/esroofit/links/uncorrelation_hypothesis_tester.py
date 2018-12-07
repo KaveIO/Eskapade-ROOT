@@ -26,7 +26,7 @@ import root_numpy
 import tabulate
 
 from eskapade import process_manager, resources, Link, DataStore, StatusCode
-from eskapade.core import persistence
+from escore.core import persistence
 from eskapade.visualization import vis_utils
 from eskapade.analysis import correlation
 

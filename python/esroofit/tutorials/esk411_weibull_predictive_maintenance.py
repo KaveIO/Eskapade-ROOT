@@ -21,7 +21,7 @@ import ROOT
 from ROOT import RooFit
 
 from eskapade import ConfigObject, Chain, process_manager
-from eskapade.core import persistence
+from escore.core import persistence
 from eskapade.logger import Logger
 
 from esroofit import roofit_utils

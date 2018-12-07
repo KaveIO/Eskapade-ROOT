@@ -7,7 +7,7 @@ import ROOT
 import pandas as pd
 
 from eskapade import process_manager, ConfigObject, DataStore
-from eskapade.core import persistence, execution, definitions
+from escore.core import persistence, execution, definitions
 from eskapade.logger import LogLevel
 
 from esroofit import resources

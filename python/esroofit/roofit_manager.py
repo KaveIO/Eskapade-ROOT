@@ -17,7 +17,7 @@ LICENSE.
 
 import ROOT
 
-from eskapade.core.process_services import ProcessService
+from escore.core.process_services import ProcessService
 
 from esroofit.roofit_models import RooFitModel
 

@@ -26,8 +26,8 @@ from setup_cxx import CMakeExtension, CMakeBuild
 NAME = 'Eskapade-ROOT'
 
 MAJOR = 0
-REVISION = 8
-PATCH = 6
+REVISION = 9
+PATCH = 0
 DEV = False
 
 # Note: also update version at: README.rst and docs/source/conf.py
