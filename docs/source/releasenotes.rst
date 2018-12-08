@@ -7,7 +7,7 @@ Version 0.9
 
 Eskapade-ROOT v0.9 (December 2018) contains several small updates compared with v0.8:
 
-* All code has been updated to Eskapade v0.9, where the core functionality has been split off into the Eskapade-Core package.
+* All code has been updated to Eskapade v0.9, where the core functionality has been split off into the Eskapade-Core package. As such the code is backwards-incompatible with v0.8.
 * The link RoofitPercentileBinning has an option for a default number of bins.
 * Several minor updates to the UncorrelationHypothesisTester link, in particular the options to store the correlation and significance matrices.
 
